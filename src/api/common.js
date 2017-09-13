@@ -27,3 +27,15 @@ export const configParams = {
   sin: 0,
   ein: 29
 }
+export const common = {
+  g_tk: 5381,
+  format: 'json',
+  inCharset: 'utf8',
+  outCharset: 'utf-8',
+  notice: 0,
+  platform: 'yqq',
+  needNewCode: 0
+}
+export const options = {
+  param: 'jsonpCallback'
+}

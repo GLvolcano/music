@@ -54,6 +54,19 @@ apiRoutes.get('/getDiscList',function(req,res){
   })
 })
 
+apiRoutes.get('/getsinger',function(req,res){
+  var url ='https://c.y.qq.com/v8/fcg-bin/v8.fcg'
+  axios.get(url,{
+    headers:{
+      referer: 'https://y.qq.com/portal/singer_list.html'
+    },
+    params:req.query
+  }).then((response) => {
+    res.jsonp(response.data)
+  }).catch((e) => {
+    console.log(e)
+  })
+})
 app.use('/api',apiRoutes)
 
 
