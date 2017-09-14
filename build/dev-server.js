@@ -67,6 +67,21 @@ apiRoutes.get('/getsinger',function(req,res){
     console.log(e)
   })
 })
+
+apiRoutes.get('/getSong',function(req,res){
+  var url ='https://c.y.qq.com/v8/fcg-bin/fcg_v8_singer_track_cp.fcg'
+  axios.get(url,{
+    headers:{
+      referer: `https://y.qq.com/n/yqq/singer/${req.singermid}.html`
+    },
+    params:req.query
+  }).then((response) => {
+    res.jsonp(response.data)
+  }).catch((e) => {
+    console.log(e)
+  })
+})
+
 app.use('/api',apiRoutes)
 
 

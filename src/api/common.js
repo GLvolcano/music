@@ -27,6 +27,7 @@ export const configParams = {
   sin: 0,
   ein: 29
 }
+
 export const common = {
   g_tk: 5381,
   format: 'json',
@@ -36,6 +37,7 @@ export const common = {
   platform: 'yqq',
   needNewCode: 0
 }
+
 export const options = {
   param: 'jsonpCallback'
 }

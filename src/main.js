@@ -5,6 +5,7 @@ import router from './router'
 import fastClick from 'fastclick'
 import VueAwesomeSwiper from 'vue-awesome-swiper'
 import VueLazyload from 'vue-lazyload'
+import store from './store'
 
 Vue.use(VueAwesomeSwiper)
 Vue.config.productionTip = false
@@ -18,5 +19,6 @@ import 'common/stylus/index.styl'
 new Vue({
   el: '#app',
   router,
+  store,
   render: h => h(App)
 })

@@ -20,3 +20,21 @@ export function getsinger() {
     return Promise.resolve(res.data)
   })
 }
+
+export function getSingerSong(id) {
+  const url = '/api/getSong'
+  const data = Object.assign({}, common, {
+    loginUin: 0,
+    hostUin: 0,
+    singermid: id,
+    order: 'listen',
+    begin: 0,
+    num: 100,
+    songstatus: 1
+  })
+  return axios.get(url, {
+    params: data
+  }).then((res) => {
+    return Promise.resolve(res.data)
+  })
+}
