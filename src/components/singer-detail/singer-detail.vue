@@ -9,7 +9,7 @@ import { getSingerSong } from 'api/getsinger'
 import { createSong } from 'common/js/song'
 import MusicList from 'components/music-list/music-list'
 import { mapGetters } from 'vuex'
-
+const ERR_OK = 0
 export default {
   created() {
     this._getSong()
@@ -37,14 +37,18 @@ export default {
         return
       }
       getSingerSong(this.singer.id).then((res) => {
-        let song = []
-        let items = res.data.list
-        items.forEach((item) => {
-          let { musicData } = item
-          song.push(createSong(musicData))
-        })
-        this.songs = song
+        if (res.code === ERR_OK) {
+          this._editdata(res.data.list)
+        }
       })
+    },
+    _editdata(items) {
+      let song = []
+      items.forEach((item) => {
+        let { musicData } = item
+        song.push(createSong(musicData))
+      })
+      this.songs = song
     }
   },
   components: {
