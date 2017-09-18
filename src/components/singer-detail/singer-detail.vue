@@ -9,6 +9,7 @@ import { getSingerSong } from 'api/getsinger'
 import { createSong } from 'common/js/song'
 import MusicList from 'components/music-list/music-list'
 import { mapGetters } from 'vuex'
+
 const ERR_OK = 0
 export default {
   created() {
