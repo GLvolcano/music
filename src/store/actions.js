@@ -7,9 +7,9 @@ export const selectPlay = function ({
   item,
   index
 }) {
-  commit(types.SET_PLAYING, true)
-  commit(types.SET_FULL_SCREEN, true)
-  commit(types.SET_PLAYLIST, item)
   commit(types.SET_SEQUENCE_LIST, item)
+  commit(types.SET_PLAYLIST, item)
   commit(types.SET_CURRENT_INDEX, index)
+  commit(types.SET_FULL_SCREEN, true)
+  commit(types.SET_PLAYING, true)
 }
