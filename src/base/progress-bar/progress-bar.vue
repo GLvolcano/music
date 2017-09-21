@@ -2,7 +2,7 @@
   <div class="progress-bar" ref="progressBar" @click="progressClick">
     <div class="bar-inner">
       <div class="progress" ref="progress"></div>
-      <div class="progress-btn-wrapper" ref="progressBtn">
+      <div class="progress-btn-wrapper" ref="progressBtn" @touchstart.prevent="progressTouchStart" @touchmove.prevent="progressTouchMove" @touchend="progressTouchEnd">
         <div class="progress-btn"></div>
       </div>
     </div>
@@ -19,15 +19,41 @@ export default {
       default: 0
     }
   },
+  created() {
+    this.touch = {}
+  },
   methods: {
     progressClick(e) {
       const rect = this.$refs.progressBar.getBoundingClientRect()
-      const Barwidth = this.$refs.progressBar.clientWidth - progressBtnWidth
       const offsetWidth = e.pageX - rect.left
+      this._change(offsetWidth)
+      this._triggerPercent()
+    },
+    progressTouchStart(e) {
+      this.touch.inited = true
+      this.touch.startX = e.touches[0].pageX
+      this.touch.left = this.$refs.progress.clientWidth
+    },
+    progressTouchMove(e) {
+      if (!this.touch.inited) {
+        return
+      }
+      const barWidth = this.$refs.progressBar.clientWidth - progressBtnWidth
+      const detal = e.touches[0].pageX - this.touch.startX
+      const offsetWidth = Math.min(Math.max(this.touch.left + detal, 0), barWidth)
+      this._change(offsetWidth)
+    },
+    progressTouchEnd() {
+      this.touch.inited = false
+      this._triggerPercent()
+    },
+    _change(offsetWidth) {
       this.$refs.progress.style.width = `${offsetWidth}px`
       this.$refs.progressBtn.style['transform'] = `translate3d(${offsetWidth}px,0,0)`
-      const percent = offsetWidth / Barwidth
-      // console.log
+    },
+    _triggerPercent() {
+      const barWidth = this.$refs.progressBar.clientWidth - progressBtnWidth
+      const percent = this.$refs.progress.clientWidth / barWidth
       this.$emit('percentChange', percent)
     }
   },
@@ -36,8 +62,7 @@ export default {
       if (newPercent >= 0) {
         const Barwidth = this.$refs.progressBar.clientWidth - progressBtnWidth
         const offsetWidth = newPercent * Barwidth
-        this.$refs.progress.style.width = `${offsetWidth}px`
-        this.$refs.progressBtn.style['transform'] = `translate3d(${offsetWidth}px,0,0)`
+        this._change(offsetWidth)
       }
     }
   }

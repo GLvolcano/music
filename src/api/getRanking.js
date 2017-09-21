@@ -1,11 +1,10 @@
 import axios from 'axios'
 import {
-  commonParams,
-  configParams
+  commonParams
 } from './common.js'
 
-export function getslider() {
-  let url = '/api/getslider'
+export function getRanking() {
+  let url = '/api/ranking'
   const data = Object.assign({}, commonParams, {
     _: +new Date()
   })
@@ -16,9 +15,16 @@ export function getslider() {
   })
 }
 
-export function getDiscList() {
-  let url = '/api/getDiscList'
-  const data = Object.assign({}, configParams)
+export function getRankSong(id) {
+  let url = '/api/rankSong'
+  const data = Object.assign({}, commonParams, {
+    needNewCode: 1,
+    tpl: 3,
+    page: 'detail',
+    type: 'top',
+    topid: id,
+    _: +new Date()
+  })
   return axios.get(url, {
     params: data
   }).then((res) => {

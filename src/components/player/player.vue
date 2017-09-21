@@ -12,16 +12,30 @@
           <h1 class="title" v-html="currentSong.name"></h1>
           <h2 class="subtitle" v-html="currentSong.singer"></h2>
         </div>
-        <div class="middle">
-          <div class="middle-l">
+        <div class="middle" @touchstart.prevent="middleTouchStart" @touchmove.prevent="middleTouchMove" @touchend="middleTouchEnd">
+          <div class="middle-l" ref="middleL">
             <div class="cd-wrapper">
               <div class="cd" :class="cdcls">
                 <img class="image" :src="currentSong.image">
               </div>
             </div>
+            <div class="playing-lyric-wrapper">
+              <div class="playing-lyric">{{playingLyric}}</div>
+            </div>
           </div>
+          <scroll class="middle-r" ref="lyricList" :data="currentLyric && currentLyric.lines">
+            <div class="lyric-wrapper">
+              <div v-if="currentLyric">
+                <p ref="lyricLine" class="text" :class="{'current': currentLineNum ===index}" v-for="(line,index) in currentLyric.lines">{{line.txt}}</p>
+              </div>
+            </div>
+          </scroll>
         </div>
         <div class="bottom">
+          <div class="dot-wrapper">
+            <span class="dot" :class="{'active': currentShow==='cd'}"></span>
+            <span class="dot" :class="{'active': currentShow==='lyric'}"></span>
+          </div>
           <div class="progress-wrapper">
             <span class="time time-l">{{format(currentTime)}}</span>
             <div class="progress-bar-wrapper">
@@ -59,7 +73,9 @@
           <p class="desc" v-html="currentSong.singer"></p>
         </div>
         <div class="control">
-          <i :class="miniIcon" @click.stop="togglePlay"></i>
+          <progress-circle :percent="percent" :radius="radius">
+            <i :class="miniIcon" @click.stop="togglePlay" class="icon-mini"></i>
+          </progress-circle>
         </div>
         <div class="control">
           <i class="icon-playlist"></i>
@@ -73,19 +89,33 @@
 <script>
 import { mapGetters, mapMutations } from 'vuex'
 import ProgressBar from 'base/progress-bar/progress-bar'
+import ProgressCircle from 'base/progress-circle/progress-circle'
+import Scroll from 'base/scroll/scroll'
 import { playMode } from 'common/js/config'
 import { disorde } from 'common/js/util'
+import Lyric from 'lyric-parser'
 
 export default {
   data() {
     return {
       currentTime: 0,
-      songReady: false
+      songReady: false,
+      radius: 32,
+      currentLyric: null,
+      currentLineNum: 0,
+      playingLyric: '',
+      currentShow: 'cd'
     }
+  },
+  created() {
+    this.touch = {}
   },
   methods: {
     togglePlay() {
       this.setPlaying(!this.playing)
+      if (this.currentLyric) {
+        this.currentLyric.togglePlay(!this.playing)
+      }
     },
     down() {
       this.setFullScreen(false)
@@ -126,6 +156,9 @@ export default {
       this.$refs.audio.currentTime = 0
       this.$refs.audio.play()
       this.setPlaying(true)
+      if (this.currentLyric) {
+        this.currentLyric.seek(0)
+      }
     },
     ready() {
       this.songReady = true
@@ -135,6 +168,9 @@ export default {
       this.$refs.audio.currentTime = currentTime
       if (!this.playing) {
         this.togglePlaying()
+      }
+      if (this.currentLyric) {
+        this.currentLyric.seek(currentTime * 1000)
       }
     },
     changeMod() {
@@ -154,8 +190,87 @@ export default {
       })
       this.setCurrentIndex(index)
     },
+    getLyric() {
+      this.currentSong.getLyric().then((lyric) => {
+        if (this.currentSong.lyric !== lyric) {
+          return
+        }
+        this.currentLyric = new Lyric(lyric, this.handleLyric)
+        if (this.playing) {
+          this.currentLyric.play()
+        }
+      })
+    },
+    handleLyric({ lineNum, txt }) {
+      this.currentLineNum = lineNum
+      if (lineNum > 5) {
+        let lineEl = this.$refs.lyricLine[lineNum - 5]
+        this.$refs.lyricList.scrollToElement(lineEl, 1000)
+      } else {
+        this.$refs.lyricList.scrollTo(0, 0, 1000)
+      }
+      this.playingLyric = txt
+    },
     updataTime(e) {
       this.currentTime = e.target.currentTime
+    },
+    middleTouchStart(e) {
+      this.touch.init = true
+      this.touch.moved = false
+      this.touch.startX = e.touches[0].pageX
+      this.touch.startY = e.touches[0].pageY
+    },
+    middleTouchMove(e) {
+      if (!this.touch.init) {
+        return
+      }
+      const detalX = e.touches[0].pageX - this.touch.startX
+      const detalY = e.touches[0].pageY - this.touch.startY
+      if (Math.abs(detalY) > Math.abs(detalX)) {
+        return
+      }
+      if (!this.touch.moved) {
+        this.touch.moved = true
+      }
+      const left = this.currentShow === 'cd' ? 0 : -window.innerWidth
+      const offsetWidth = Math.min(0, Math.max(-window.innerWidth, left + detalX))
+      this.touch.percent = Math.abs(offsetWidth / window.innerWidth)
+      this.$refs.lyricList.$el.style['transform'] = `translate3d(${offsetWidth}px,0,0)`
+      this.$refs.lyricList.$el.style['transitionDuration'] = 0
+      this.$refs.middleL.style.opacity = 1 - this.touch.percent
+      this.$refs.middleL.style['transitionDuration'] = 0
+    },
+    middleTouchEnd() {
+      if (!this.touch.moved) {
+        return
+      }
+      let offsetWidth
+      let opacity
+      if (this.currentShow === 'cd') {
+        if (this.touch.percent > 0.1) {
+          offsetWidth = -window.innerWidth
+          opacity = 0
+          this.currentShow = 'lyric'
+        } else {
+          offsetWidth = 0
+          opacity = 1
+        }
+      } else {
+        if (this.touch.percent < 0.9) {
+          offsetWidth = 0
+          this.currentShow = 'cd'
+          opacity = 1
+        } else {
+          offsetWidth = -window.innerWidth
+          opacity = 0
+        }
+      }
+      const time = 300
+      this.$refs.lyricList.$el.style['transform'] = `translate3d(${offsetWidth}px,0,0)`
+      this.$refs.lyricList.$el.style['transitionDuration'] = `${time}ms`
+      this.$refs.middleL.style.opacity = opacity
+      this.$refs.middleL.style['transitionDuration'] = `${time}ms`
+      this.touch.init = false
     },
     format(interval) {
       interval = interval | 0
@@ -206,9 +321,24 @@ export default {
     ])
   },
   watch: {
-    currentSong() {
-      setTimeout(() => {
+    currentSong(newSong, oldSong) {
+      if (!newSong.id) {
+        return
+      }
+
+      if (oldSong && (newSong.id === oldSong.id)) {
+        return
+      }
+      if (this.currentLyric) {
+        this.currentLyric.stop()
+        this.currentTime = 0
+        this.playingLyric = ''
+        this.currentLineNum = 0
+      }
+      clearTimeout(this.timer)
+      this.timer = setTimeout(() => {
         this.$refs.audio.play()
+        this.getLyric()
       }, 1000)
     },
     playing(newPlaying) {
@@ -216,10 +346,19 @@ export default {
       this.$nextTick(() => {
         newPlaying ? audio.play() : audio.pause()
       })
+    },
+    fullScreen(newVal) {
+      if (newVal) {
+        setTimeout(() => {
+          this.$refs.lyricList.refresh()
+        }, 20)
+      }
     }
   },
   components: {
-    ProgressBar
+    ProgressBar,
+    ProgressCircle,
+    Scroll
   }
 }
 </script>
@@ -227,7 +366,7 @@ export default {
 <style lang="stylus" scoped>
   @import "~common/stylus/variable"
   @import "~common/stylus/mixin"
-  .player
+ .player
     .player-normal
       position: fixed
       left: 0
@@ -236,10 +375,6 @@ export default {
       bottom: 0
       z-index: 150
       background: $color-background
-      &.normal-enter-avtive,.normal-leave-active
-        transition all 0.8s
-      &.normal-enter,.normal-leave-to
-        transform translate3d(0,100%,0)
       .background
         position: absolute
         left: 0
@@ -313,6 +448,34 @@ export default {
                 width: 100%
                 height: 100%
                 border-radius: 50%
+
+          .playing-lyric-wrapper
+            width: 80%
+            margin: 30px auto 0 auto
+            overflow: hidden
+            text-align: center
+            .playing-lyric
+              height: 20px
+              line-height: 20px
+              font-size: $font-size-medium
+              color: $color-text-l
+        .middle-r
+          display: inline-block
+          vertical-align: top
+          width: 100%
+          height: 100%
+          overflow: hidden
+          .lyric-wrapper
+            width: 80%
+            margin: 0 auto
+            overflow: hidden
+            text-align: center
+            .text
+              line-height: 32px
+              color: $color-text-l
+              font-size: $font-size-medium
+              &.current
+                color: $color-text
       .bottom
         position: absolute
         bottom: 50px

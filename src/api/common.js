@@ -13,7 +13,6 @@ export const commonParams = {
 export const configParams = {
   rnd: Math.random(),
   g_tk: 5381,
-  jsonpCallback: 'getPlaylist',
   loginUin: 0,
   hostUin: 0,
   format: 'json',
@@ -41,3 +40,4 @@ export const common = {
 export const options = {
   param: 'jsonpCallback'
 }
+
