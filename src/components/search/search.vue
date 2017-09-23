@@ -9,7 +9,7 @@
           <div class="hot-key">
             <h1 class="title">热门搜索</h1>
             <ul>
-              <li class="item" v-for="item in hotkey" @click="addQuery(item)">
+              <li class="item" v-for="item in hotkey" @click="addQuery(item.k)">
                 <span> {{item.k}} </span>
               </li>
             </ul>
@@ -17,25 +17,29 @@
           <div class="search-history">
             <h1 class="title">
               <span class="text">搜索历史</span>
-              <span class="clear">
+              <span class="clear" @click="clearSearchHistory">
                 <i class="icon-clear"></i>
               </span>
             </h1>
-            <!-- <search-list @delete="deleteSearchHistory" @select="addQuery" :searches="searchHistory"></search-list> -->
+            <search-list @delete="deleteSearchHistory" @select="addQuery" :searches="searchHistory"></search-list>
           </div>
         </div>
       </div>
     </div>
     <div class="search-result" v-show="query" ref="searchResult">
-    <suggest :query="query"></suggest>
+      <suggest :query="query" @select="saveSearch"></suggest>
     </div>
+    <router-view></router-view>
   </div>
 </template>
 
 <script>
 import SearchBox from 'base/search-box/search-box'
 import Suggest from 'components/suggest/suggest'
+import SearchList from 'base/search-list/search-list'
 import { getHotKey } from 'api/search'
+import { mapActions, mapGetters } from 'vuex'
+
 const ERR_OK = 0
 export default {
   data() {
@@ -48,11 +52,8 @@ export default {
     this._getHotKey()
   },
   methods: {
-    // deleteSearchHistory() {
-
-    // },
-    addQuery(item) {
-      this.$refs.searchBox.setQuery(item.k)
+    addQuery(query) {
+      this.$refs.searchBox.setQuery(query)
     },
     onQueryChange(query) {
       this.query = query
@@ -63,11 +64,25 @@ export default {
           this.hotkey = res.data.hotkey.slice(0, 10)
         }
       })
-    }
+    },
+    saveSearch() {
+      this.saveSearchHistory(this.query)
+    },
+    ...mapActions([
+      'saveSearchHistory',
+      'deleteSearchHistory',
+      'clearSearchHistory'
+    ])
+  },
+  computed: {
+    ...mapGetters([
+      'searchHistory'
+    ])
   },
   components: {
     SearchBox,
-    Suggest
+    Suggest,
+    SearchList
   }
 }
 </script>

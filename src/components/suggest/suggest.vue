@@ -1,7 +1,7 @@
 <template>
-  <scroll class="suggest" :data="result" :pullup="pullup" @scrollToEnd="searchMore">
+  <scroll class="suggest" :data="result" :pullup="pullup" @scrollToEnd="searchMore" ref="suggest">
     <ul class="suggest-list">
-      <li class="suggest-item" v-for="item in result">
+      <li class="suggest-item" v-for="item in result" @click="selectItem(item)">
         <div class="icon">
           <i :class="getIcon(item)"></i>
         </div>
@@ -9,6 +9,7 @@
           <p class="text" v-html="getDisplayName(item)"></p>
         </div>
       </li>
+      <loading v-show="hasMore"></loading>
     </ul>
   </scroll>
 </template>
@@ -17,6 +18,10 @@
 import { search } from 'api/search'
 import { createSong } from 'common/js/song'
 import Scroll from 'base/scroll/scroll'
+import Loading from 'base/loading/loading'
+import Singer from 'common/js/singer'
+import { mapMutations, mapActions } from 'vuex'
+
 const perpage = 20
 const ERR_OK = 0
 const TYPE_SINGER = 'singer'
@@ -50,6 +55,21 @@ export default {
       } else {
         return `${item.name}-${item.singer}`
       }
+    },
+    selectItem(item) {
+      if (item.type === TYPE_SINGER) {
+        const singer = new Singer({
+          id: item.singermid,
+          name: item.singername
+        })
+        this.$router.push({
+          path: `/search/${singer.id}`
+        })
+        this.setSinger(singer)
+      } else {
+        this.insertSong(item)
+      }
+      this.$emit('select', item)
     },
     _search() {
       this.page = 1
@@ -98,7 +118,13 @@ export default {
         }
       })
       return ret
-    }
+    },
+    ...mapMutations({
+      setSinger: 'SET_SINGER'
+    }),
+    ...mapActions([
+      'insertSong'
+    ])
   },
   watch: {
     query(newQuery) {
@@ -106,7 +132,8 @@ export default {
     }
   },
   components: {
-    Scroll
+    Scroll,
+    Loading
   }
 }
 </script>
